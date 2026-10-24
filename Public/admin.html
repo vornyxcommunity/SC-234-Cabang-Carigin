@@ -1,0 +1,16 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin - SC 234 Caringin</title><link rel="icon" href="logo.jpg"><link rel="stylesheet" href="style.css"></head><body>
+<div id="lg" class="card center"><img src="logo.jpg"><h2>ADMIN PANEL</h2><input id="u" placeholder="Username"><input id="p" type="password" placeholder="Password"><button class="full" onclick="go()">MASUK</button><div class="err" id="err"></div></div>
+<div id="ad" class="wrap hide"><div class="row"><h1>ADMIN SC 234 CARINGIN</h1><button class="alt" onclick="localStorage.removeItem('atk');location.reload()">Keluar</button></div>
+<div class="grid"><div class="card"><small>Total Member</small><div class="big" id="t"></div></div><div class="card"><small><span class="dot on"></span> Online</small><div class="big" id="o"></div></div><div class="card"><small>Anggota Lama</small><div class="big" id="l"></div></div><div class="card"><small>Anggota Baru</small><div class="big" id="b"></div></div></div>
+<div class="card" style="overflow-x:auto"><h2>Data Member</h2><table><thead><tr><th></th><th>Username</th><th>Status</th><th>Login Terakhir</th><th>Jml Login</th><th>Daftar</th></tr></thead><tbody id="us"></tbody></table></div>
+<div class="card" style="margin-top:12px;overflow-x:auto"><h2>Riwayat Login</h2><table><thead><tr><th>Username</th><th>Status</th><th>Waktu</th></tr></thead><tbody id="lo"></tbody></table></div></div>
+<script src="common.js"></script><script>
+const f=t=>t?new Date(t).toLocaleString('id-ID'):'-';
+async function go(){try{const j=await api('login',{username:$('#u').value,password:$('#p').value},'atk');if(!j.admin)throw new Error('Bukan akun admin.');localStorage.setItem('atk',j.token);load()}catch(e){$('#err').textContent=e.message}}
+async function load(){const t=localStorage.getItem('atk');if(!t)return;try{const d=await api('admin',{},'atk');$('#lg').classList.add('hide');$('#ad').classList.remove('hide');
+const on=x=>Date.now()-x.lastSeen<120000;$('#t').textContent=d.users.length;$('#o').textContent=d.users.filter(on).length;$('#l').textContent=d.users.filter(x=>x.status==='lama').length;$('#b').textContent=d.users.filter(x=>x.status==='baru').length;
+$('#us').innerHTML=d.users.sort((a,b)=>b.lastLogin-a.lastLogin).map(x=>`<tr><td><span class="dot ${on(x)?'on':''}"></span></td><td>${esc(x.username)}</td><td>${badge(x.status)}</td><td>${f(x.lastLogin)}</td><td>${x.logins}</td><td>${f(x.created)}</td></tr>`).join('');
+$('#lo').innerHTML=d.log.map(x=>`<tr><td>${esc(x.u)}</td><td>${badge(x.status)}</td><td>${f(x.t)}</td></tr>`).join('')||'<tr><td colspan=3>Belum ada login.</td></tr>'}catch(e){localStorage.removeItem('atk')}}
+load();setInterval(load,30000);
+</script></body></html>

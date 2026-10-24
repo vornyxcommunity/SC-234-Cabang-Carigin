@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SC 234 Cabang Caringin</title><link rel="icon" href="logo.jpg"><link rel="stylesheet" href="style.css"></head><body>
+<div id="loader"><img src="logo.jpg" alt="SC 234"><div class="bar"><i></i></div><small>Memuat SC 234 Cabang Caringin...</small></div>
+
+<div id="auth" class="card center hide"><img src="logo.jpg"><h2>SC 234 CARINGIN</h2><p style="color:#999;margin-bottom:10px">Pimpinan Cabang Caringin</p>
+<div id="fLogin"><input id="lu" placeholder="Username"><input id="lp" type="password" placeholder="Password"><button class="full" onclick="login()">MASUK</button>
+<p style="margin-top:12px;color:#999">Belum punya akun? <a href="#" onclick="sw(1)" style="color:#d4af37">Daftar</a></p></div>
+<div id="fReg" class="hide"><input id="ru" placeholder="Username"><select id="rs"><option value="">Pilih status anggota</option><option value="lama">Anggota Lama</option><option value="baru">Anggota Baru</option></select><input id="rp" type="password" placeholder="Password"><button class="full" onclick="reg()">DAFTAR</button>
+<p style="margin-top:12px;color:#999">Sudah punya akun? <a href="#" onclick="sw(0)" style="color:#d4af37">Masuk</a></p></div>
+<div class="err" id="err"></div></div>
+
+<div id="app" class="wrap hide">
+<div class="row"><h1>SC 234 CARINGIN</h1><button class="alt" onclick="logout()">Keluar</button></div>
+<div class="tabs"><button class="on" data-t="dash">Dashboard</button><button data-t="act">Activity</button><button data-t="prof">Profile</button></div>
+
+<section id="dash"><div class="grid"><div class="card"><small>Total Member</small><div class="big" id="sT">-</div></div><div class="card"><small><span class="dot on"></span> Online</small><div class="big" id="sO">-</div></div><div class="card"><small>Anggota Lama</small><div class="big" id="sL">-</div></div><div class="card"><small>Anggota Baru</small><div class="big" id="sB">-</div></div></div></section>
+
+<section id="act" class="hide"><div class="card"><h2>Upload Activity</h2><input type="file" id="aimg" accept="image/*"><textarea id="adesc" rows="3" placeholder="Deskripsi kegiatan..."></textarea><button class="full" onclick="post()">UPLOAD</button><div class="err" id="aerr"></div></div><div id="feed"></div></section>
+
+<section id="prof" class="hide"><div class="card" style="text-align:center"><img id="pimg" class="av"><h2 id="pname" style="margin-top:10px"></h2><div id="pst"></div><p style="color:#999;margin:8px 0">Terdaftar sejak <span id="pdate"></span></p><input type="file" id="pfile" accept="image/*"><button class="full" onclick="photo()">GANTI FOTO PROFIL</button><div class="err" id="perr"></div></div></section>
+</div>
+<script src="common.js"></script><script>
+loader();
+function sw(x){$('#fLogin').classList.toggle('hide',!!x);$('#fReg').classList.toggle('hide',!x);$('#err').textContent=''}
+const show=()=>{const ok=localStorage.getItem('tk');$('#auth').classList.toggle('hide',!!ok);$('#app').classList.toggle('hide',!ok);if(ok)init()};
+async function login(){try{const j=await api('login',{username:$('#lu').value,password:$('#lp').value});if(j.admin)throw new Error('Akun admin masuk lewat /admin');localStorage.setItem('tk',j.token);show()}catch(e){$('#err').textContent=e.message}}
+async function reg(){try{await api('register',{username:$('#ru').value,status:$('#rs').value,password:$('#rp').value});$('#lu').value=$('#ru').value;sw(0);$('#err').textContent='Pendaftaran berhasil, silakan masuk.'}catch(e){$('#err').textContent=e.message}}
+function logout(){localStorage.removeItem('tk');show()}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));['dash','act','prof'].forEach(t=>$('#'+t).classList.toggle('hide',t!==b.dataset.t));({dash:stats,act:feed,prof:me})[b.dataset.t]()});
+async function stats(){const s=await api('stats');$('#sT').textContent=s.total;$('#sO').textContent=s.online;$('#sL').textContent=s.lama;$('#sB').textContent=s.baru}
+async function feed(){const l=await api('activities');$('#feed').innerHTML=l.map(p=>`<div class="card post"><div class="row"><b>${esc(p.u)}</b>${badge(p.status)}</div><img src="${p.image}"><p>${esc(p.desc)}</p><small style="color:#888">${new Date(p.t).toLocaleString('id-ID')}</small></div>`).join('')||'<p style="margin:16px;color:#888">Belum ada activity.</p>'}
+async function post(){try{const f=$('#aimg').files[0];if(!f)throw new Error('Pilih gambar dulu.');await api('post',{image:await shrink(f),desc:$('#adesc').value});$('#aimg').value=$('#adesc').value='';$('#aerr').textContent='';feed()}catch(e){$('#aerr').textContent=e.message}}
+async function me(){const m=await api('me');$('#pname').textContent=m.username;$('#pst').innerHTML=badge(m.status);$('#pdate').textContent=new Date(m.created).toLocaleDateString('id-ID');$('#pimg').src=m.photo||'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#111"/><circle cx="5" cy="4" r="2" fill="#555"/><ellipse cx="5" cy="9" rx="3" ry="2.5" fill="#555"/></svg>')}
+async function photo(){try{const f=$('#pfile').files[0];if(!f)throw new Error('Pilih foto dulu.');await api('photo',{photo:await shrink(f,400,.8)});$('#perr').textContent='';me()}catch(e){$('#perr').textContent=e.message}}
+function init(){stats().catch(e=>{if(/login/i.test(e.message))logout()});setInterval(()=>localStorage.getItem('tk')&&stats().catch(()=>{}),60000)}
+show();
+</script></body></html>
